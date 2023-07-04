@@ -3,13 +3,14 @@ import os
 class Parameters():
 	def __init__(self):
 		self.n_processors = 8
+		self.base_dir = '/home/nlp/ron.eliav/pose3d/ai-camera-pose-network/DeepVO'
 		# Path
-		self.data_dir =  '/home/nlp/ron.eliav/pose3d/ai-camera-pose-network/DeepVO-pytorch/KITTI/'
-		self.image_dir = self.data_dir + '/images/'
-		self.pose_dir = self.data_dir + '/pose_GT/'
+		self.data_dir = '/home/nlp/ron.eliav/pose3d/data' # '/home/nlp/ron.eliav/pose3d/ai-camera-pose-network/DeepVO/KITTI/'
+		self.image_dir = self.data_dir + '/train_images-'
+		self.pose_file = self.data_dir + '/train_labels.csv'
 		
-		self.train_video = ['00', '01', '02', '05', '08', '09']
-		self.valid_video = ['04', '06', '07', '10']
+		self.train_video = ['1','2','3'] # ['00', '01', '02', '05', '08', '09']
+		self.valid_video = ['4'] # ['04', '06', '07', '10']
 		self.partition = None  # partition videos in 'train_video' to train / valid dataset  #0.8
 		
 
@@ -25,8 +26,8 @@ class Parameters():
 		self.sample_times = 3
 
 		# Data info path
-		self.train_data_info_path = 'datainfo/train_df_t{}_v{}_p{}_seq{}x{}_sample{}.pickle'.format(''.join(self.train_video), ''.join(self.valid_video), self.partition, self.seq_len[0], self.seq_len[1], self.sample_times)
-		self.valid_data_info_path = 'datainfo/valid_df_t{}_v{}_p{}_seq{}x{}_sample{}.pickle'.format(''.join(self.train_video), ''.join(self.valid_video), self.partition, self.seq_len[0], self.seq_len[1], self.sample_times)
+		self.train_data_info_path = self.base_dir + '/datainfo/train_df_t{}_v{}_p{}_seq{}x{}_sample{}.pickle'.format(''.join(self.train_video), ''.join(self.valid_video), self.partition, self.seq_len[0], self.seq_len[1], self.sample_times)
+		self.valid_data_info_path = self.base_dir + '/datainfo/valid_df_t{}_v{}_p{}_seq{}x{}_sample{}.pickle'.format(''.join(self.train_video), ''.join(self.valid_video), self.partition, self.seq_len[0], self.seq_len[1], self.sample_times)
 
 
 		# Model
@@ -47,19 +48,19 @@ class Parameters():
 					# {'opt': 'Cosine', 'T': 100 , 'lr': 0.001}
 		
 		# Pretrain, Resume training
-		self.pretrained_flownet = '/home/nlp/ron.eliav/pose3d/ai-camera-pose-network/DeepVO-pytorch/pretrained/flownets_bn_EPE2.459.pth.tar'
+		self.pretrained_flownet = '/home/nlp/ron.eliav/pose3d/ai-camera-pose-network/DeepVO/pretrained/flownets_bn_EPE2.459.pth.tar'
 								# Choice:
 								# None
 								# './pretrained/flownets_bn_EPE2.459.pth.tar'  
 								# './pretrained/flownets_EPE1.951.pth.tar'
 		self.resume = False  # resume training
 		self.resume_t_or_v = '.train'
-		self.load_model_path = 'models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.model{}'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]), self.resume_t_or_v)
-		self.load_optimizer_path = 'models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.optimizer{}'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]), self.resume_t_or_v)
+		self.load_model_path = self.base_dir + '/models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.model{}'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]), self.resume_t_or_v)
+		self.load_optimizer_path = self.base_dir + '/models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.optimizer{}'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]), self.resume_t_or_v)
 
-		self.record_path = 'records/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.txt'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]))
-		self.save_model_path = 'models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.model'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]))
-		self.save_optimzer_path = 'models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.optimizer'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]))
+		self.record_path = self.base_dir + '/records/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.txt'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]))
+		self.save_model_path = self.base_dir + '/models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.model'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]))
+		self.save_optimzer_path = self.base_dir + '/models/t{}_v{}_im{}x{}_s{}x{}_b{}_rnn{}_{}.optimizer'.format(''.join(self.train_video), ''.join(self.valid_video), self.img_h, self.img_w, self.seq_len[0], self.seq_len[1], self.batch_size, self.rnn_hidden_size, '_'.join([k+str(v) for k, v in self.optim.items()]))
 		
 		
 		if not os.path.isdir(os.path.dirname(self.record_path)):

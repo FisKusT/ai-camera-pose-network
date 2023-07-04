@@ -102,8 +102,8 @@ for ep in range(par.epochs):
 	t_loss_list = []
 	for _, t_x, t_y in tqdm(train_dl):
 		if use_cuda:
-			t_x = t_x.cuda(non_blocking=par.pin_mem)
-			t_y = t_y.cuda(non_blocking=par.pin_mem)
+			t_x = t_x.cuda(non_blocking=par.pin_mem).float()
+			t_y = t_y.cuda(non_blocking=par.pin_mem).float()
 		ls = M_deepvo.step(t_x, t_y, optimizer).data.cpu().numpy()
 		t_loss_list.append(float(ls))
 		loss_mean += float(ls)

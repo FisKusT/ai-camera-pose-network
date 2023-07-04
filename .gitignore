@@ -3,3 +3,8 @@ __pycache__/
 *tmp*
 *.ipynb
 src/lightning_logs/
+DeepVO/KITTI
+DeepVO/datainfo
+DeepVO/models
+DeepVO/pretrained
+DeepVO/records

@@ -11,14 +11,19 @@ import time
 from params import par
 from helper import normalize_angle_delta
 
+def get_pose(fpathes, pose_df):
+    img_names = [os.path.basename(p) for p in fpathes]
+    poses = pose_df.loc[img_names][['Easting','Northing','Height','Roll','Pitch','Yaw']].values
+    return np.array(poses)
 
 def get_data_info(folder_list, seq_len_range, overlap, sample_times=1, pad_y=False, shuffle=False, sort=True):
     X_path, Y = [], []
     X_len = []
+    poses_df = pd.read_csv(par.pose_file, index_col='Filename') # columns: Filename,TrajectoryId,Timestamp,Easting,Northing,Height,Roll,Pitch,Yaw
     for folder in folder_list:
         start_t = time.time()
-        poses = np.load('{}{}.npy'.format(par.pose_dir, folder))  # (n_images, 6)
-        fpaths = glob.glob('{}{}/*.png'.format(par.image_dir, folder))
+        # poses = np.load('{}{}.npy'.format(par.pose_dir, folder))  # (n_images, 6)
+        fpaths = glob.glob('{}{}/*.jpg'.format(par.image_dir, folder))
         fpaths.sort()
         # Fixed seq_len
         if seq_len_range[0] == seq_len_range[1]:
@@ -37,7 +42,7 @@ def get_data_info(folder_list, seq_len_range, overlap, sample_times=1, pad_y=Fal
                 if res != 0:
                     n_frames = n_frames - res
                 x_segs = [fpaths[i:i+seq_len] for i in range(st, n_frames, jump)]
-                y_segs = [poses[i:i+seq_len] for i in range(st, n_frames, jump)]
+                y_segs = get_pose(x_segs, poses_df) # [poses[i:i+seq_len] for i in range(st, n_frames, jump)]
                 Y += y_segs
                 X_path += x_segs
                 X_len += [len(xs) for xs in x_segs]
@@ -54,10 +59,10 @@ def get_data_info(folder_list, seq_len_range, overlap, sample_times=1, pad_y=Fal
                         x_seg = fpaths[start:start+n] 
                         X_path.append(x_seg)
                         if not pad_y:
-                            Y.append(poses[start:start+n])
+                            Y.append(get_pose(x_seg, poses_df)) # Y.append(poses[start:start+n])
                         else:
                             pad_zero = np.zeros((max_len-n, 15))
-                            padded = np.concatenate((poses[start:start+n], pad_zero))
+                            padded = np.concatenate((get_pose(x_seg, poses_df), pad_zero))
                             Y.append(padded.tolist())
                     else:
                         print('Last %d frames is not used' %(start+n-n_frames))
@@ -198,6 +203,7 @@ class ImageSequenceDataset(Dataset):
     def __getitem__(self, index):
         raw_groundtruth = np.hsplit(self.groundtruth_arr[index], np.array([6]))	
         groundtruth_sequence = raw_groundtruth[0]
+        """
         groundtruth_rotation = raw_groundtruth[1][0].reshape((3, 3)).T # opposite rotation of the first frame
         groundtruth_sequence = torch.FloatTensor(groundtruth_sequence)
         # groundtruth_sequence[1:] = groundtruth_sequence[1:] - groundtruth_sequence[0:-1]  # get relative pose w.r.t. previois frame 
@@ -221,9 +227,9 @@ class ImageSequenceDataset(Dataset):
 			
         # print('Item after transform: ' + str(index) + '   ' + str(groundtruth_sequence))
 
+        """
         image_path_sequence = self.image_arr[index]
         sequence_len = torch.tensor(self.seq_len_list[index])  #sequence_len = torch.tensor(len(image_path_sequence))
-        
         image_sequence = []
         for img_path in image_path_sequence:
             img_as_img = Image.open(img_path)
@@ -234,6 +240,7 @@ class ImageSequenceDataset(Dataset):
             img_as_tensor = img_as_tensor.unsqueeze(0)
             image_sequence.append(img_as_tensor)
         image_sequence = torch.cat(image_sequence, 0)
+        
         return (sequence_len, image_sequence, groundtruth_sequence)
 
     def __len__(self):
