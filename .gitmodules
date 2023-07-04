@@ -1,0 +1,3 @@
+[submodule "DeepVO-pytorch"]
+	path = DeepVO-pytorch
+	url = https://github.com/ChiWeiHsiao/DeepVO-pytorch.git
