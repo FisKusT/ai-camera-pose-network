@@ -9,7 +9,7 @@ from model import DeepVO
 from data_helper import get_data_info, SortedRandomBatchSampler, ImageSequenceDataset, get_partition_data_info
 from tqdm import tqdm
 
-
+# TODO: replace parameters logging with W&B
 # Write all hyperparameters to record_path
 mode = 'a' if par.resume else 'w'
 with open(par.record_path, mode) as f:
@@ -112,39 +112,40 @@ for ep in range(par.epochs):
 	print('Train take {:.1f} sec'.format(time.time()-st_t))
 	loss_mean /= len(train_dl)
 
-	# Validation
-	st_t = time.time()
-	M_deepvo.eval()
-	loss_mean_valid = 0
-	v_loss_list = []
-	for _, v_x, v_y in valid_dl:
-		if use_cuda:
-			v_x = v_x.cuda(non_blocking=par.pin_mem)
-			v_y = v_y.cuda(non_blocking=par.pin_mem)
-		v_ls = M_deepvo.get_loss(v_x, v_y).data.cpu().numpy()
-		v_loss_list.append(float(v_ls))
-		loss_mean_valid += float(v_ls)
-	print('Valid take {:.1f} sec'.format(time.time()-st_t))
-	loss_mean_valid /= len(valid_dl)
+	if ep % par.valid_interval == 0:
+		# Validation
+		st_t = time.time()
+		M_deepvo.eval()
+		loss_mean_valid = 0
+		v_loss_list = []
+		for _, v_x, v_y in valid_dl:
+			if use_cuda:
+				v_x = v_x.cuda(non_blocking=par.pin_mem)
+				v_y = v_y.cuda(non_blocking=par.pin_mem)
+			v_ls = M_deepvo.get_loss(v_x, v_y).data.cpu().numpy()
+			v_loss_list.append(float(v_ls))
+			loss_mean_valid += float(v_ls)
+		print('Valid take {:.1f} sec'.format(time.time()-st_t))
+		loss_mean_valid /= len(valid_dl)
 
 
-	f = open(par.record_path, 'a')
-	f.write('Epoch {}\ntrain loss mean: {}, std: {:.2f}\nvalid loss mean: {}, std: {:.2f}\n'.format(ep+1, loss_mean, np.std(t_loss_list), loss_mean_valid, np.std(v_loss_list)))
-	print('Epoch {}\ntrain loss mean: {}, std: {:.2f}\nvalid loss mean: {}, std: {:.2f}\n'.format(ep+1, loss_mean, np.std(t_loss_list), loss_mean_valid, np.std(v_loss_list)))
+		f = open(par.record_path, 'a')
+		f.write('Epoch {}\ntrain loss mean: {}, std: {:.2f}\nvalid loss mean: {}, std: {:.2f}\n'.format(ep+1, loss_mean, np.std(t_loss_list), loss_mean_valid, np.std(v_loss_list)))
+		print('Epoch {}\ntrain loss mean: {}, std: {:.2f}\nvalid loss mean: {}, std: {:.2f}\n'.format(ep+1, loss_mean, np.std(t_loss_list), loss_mean_valid, np.std(v_loss_list)))
 
-	# Save model
-	# save if the valid loss decrease
-	check_interval = 1
-	if loss_mean_valid < min_loss_v and ep % check_interval == 0:
-		min_loss_v = loss_mean_valid
-		print('Save model at ep {}, mean of valid loss: {}'.format(ep+1, loss_mean_valid))  # use 4.6 sec 
-		torch.save(M_deepvo.state_dict(), par.save_model_path+'.valid')
-		torch.save(optimizer.state_dict(), par.save_optimzer_path+'.valid')
-	# save if the training loss decrease
-	check_interval = 1
-	if loss_mean < min_loss_t and ep % check_interval == 0:
-		min_loss_t = loss_mean
-		print('Save model at ep {}, mean of train loss: {}'.format(ep+1, loss_mean))
-		torch.save(M_deepvo.state_dict(), par.save_model_path+'.train')
-		torch.save(optimizer.state_dict(), par.save_optimzer_path+'.train')
-	f.close()
+		# Save model
+		# save if the valid loss decrease
+		check_interval = 10
+		if loss_mean_valid < min_loss_v and ep % check_interval == 0:
+			min_loss_v = loss_mean_valid
+			print('Save model at ep {}, mean of valid loss: {}'.format(ep+1, loss_mean_valid))  # use 4.6 sec
+			torch.save(M_deepvo.state_dict(), par.save_model_path+'.valid')
+			torch.save(optimizer.state_dict(), par.save_optimzer_path+'.valid')
+		# save if the training loss decrease
+		check_interval = 10
+		if loss_mean < min_loss_t and ep % check_interval == 0:
+			min_loss_t = loss_mean
+			print('Save model at ep {}, mean of train loss: {}'.format(ep+1, loss_mean))
+			torch.save(M_deepvo.state_dict(), par.save_model_path+'.train')
+			torch.save(optimizer.state_dict(), par.save_optimzer_path+'.train')
+		f.close()

@@ -182,13 +182,13 @@ class SortedRandomBatchSampler(Sampler):
 
 
 class ImageSequenceDataset(Dataset):
-    def __init__(self, info_dataframe, resize_mode='crop', new_sizeize=None, img_mean=None, img_std=(1,1,1), minus_point_5=False):
+    def __init__(self, info_dataframe, resize_mode='crop', new_size=None, img_mean=None, img_std=(1, 1, 1), minus_point_5=False):
         # Transforms
         transform_ops = []
         if resize_mode == 'crop':
-            transform_ops.append(transforms.CenterCrop((new_sizeize[0], new_sizeize[1])))
+            transform_ops.append(transforms.CenterCrop((new_size[0], new_size[1])))
         elif resize_mode == 'rescale':
-            transform_ops.append(transforms.Resize((new_sizeize[0], new_sizeize[1])))
+            transform_ops.append(transforms.Resize((new_size[0], new_size[1])))
         transform_ops.append(transforms.ToTensor())
         #transform_ops.append(transforms.Normalize(mean=img_mean, std=img_std))
         self.transformer = transforms.Compose(transform_ops)
