@@ -26,8 +26,12 @@ def conv(batchNorm, in_planes, out_planes, kernel_size=3, stride=1, dropout=0):
 
 
 class DeepVO(nn.Module):
-    def __init__(self, imsize1, imsize2, batchNorm=True):
+    def __init__(self, imsize1, imsize2, batchNorm=True, angle_loss_weight=1000.0, translation_loss_weight=1.0,
+                 height_loss_weight=1000.0):
         super(DeepVO, self).__init__()
+        self.angle_loss_weight = angle_loss_weight
+        self.translation_loss_weight = translation_loss_weight
+        self.height_loss_weight = height_loss_weight
         # CNN
         self.batchNorm = batchNorm
         self.clip = par.clip
@@ -87,7 +91,7 @@ class DeepVO(nn.Module):
     def forward(self, x):
         # x: (batch, seq_len, channel, width, height)
         # stack_image
-        x = torch.cat((x[:, :-1], x[:, 1:]), dim=2)
+        x = torch.cat((x[:, :-1], x[:, 1:]), dim=2)  # TODO: check if this is correct
         batch_size = x.size(0)
         seq_len = x.size(1)
         # CNN
@@ -119,9 +123,11 @@ class DeepVO(nn.Module):
         predicted = self.forward(x)
         y = y[:, 1:, :]  # (batch, seq, dim_pose)
         # Weighted MSE Loss
-        translation_loss = torch.nn.functional.mse_loss(predicted[:, :, :3], y[:, :, :3])
+        translation_loss = torch.nn.functional.mse_loss(predicted[:, :, :2], y[:, :, :2])
+        height_loss = torch.nn.functional.mse_loss(predicted[:, :, 2], y[:, :, 2])
         angle_loss = torch.nn.functional.mse_loss(predicted[:, :, 3:], y[:, :, 3:])
-        loss = (100 * angle_loss + translation_loss)
+        loss = (
+                    self.angle_loss_weight * angle_loss + self.translation_loss_weight * translation_loss + self.height_loss_weight * height_loss)
         return loss
 
     def step(self, x, y, optimizer):

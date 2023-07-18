@@ -11,10 +11,7 @@ from data_helper import get_data_info, ImageSequenceDataset
 from torch.utils.data import DataLoader
 from helper import eulerAnglesToRotationMatrix
 
-if __name__ == '__main__':    
-
-	videos_to_test = ['04', '05', '07', '10', '09']
-
+if __name__ == '__main__':
 	# Path
 	load_model_path = par.load_model_path   #choose the model you want to load
 	save_dir = 'result/'  # directory to save prediction answer

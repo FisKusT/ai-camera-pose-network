@@ -10,8 +10,8 @@ class Parameters:
         self.image_dir = self.data_dir + '/train_images-'
         self.pose_file = self.data_dir + '/train_labels.csv'
 
-        self.train_video = ['1', '2', '3']  # ['00', '01', '02', '05', '08', '09']
-        self.valid_video = ['4']  # ['04', '06', '07', '10']
+        self.train_video = ['1', '2', '3', '4']  # ['00', '01', '02', '05', '08', '09']
+        self.valid_video = []  # ['04', '06', '07', '10']
         self.partition = None  # partition videos in 'train_video' to train / valid dataset  #0.8
 
         # Data Preprocessing
@@ -22,8 +22,8 @@ class Parameters:
         self.img_stds = (0.2610784009469139, 0.25729316928935814, 0.25163823815039915)
         self.minus_point_5 = True
 
-        self.seq_len = (5, 7)
-        self.sample_times = 3
+        self.seq_len = (7, 7)
+        self.sample_times = 1
 
         # Data info path
         self.train_data_info_path = self.base_dir + '/datainfo/train_df_t{}_v{}_p{}_seq{}x{}_sample{}.pickle'.format(
@@ -40,12 +40,18 @@ class Parameters:
         self.rnn_dropout_between = 0  # 0: no dropout
         self.clip = None
         self.batch_norm = True
+        self.angle_loss_weight = 1.0
+        self.translation_loss_weight = 0.0
+        self.height_loss_weight = 0.0
         # Training
         self.epochs = 250
-        self.valid_interval = 10
-        self.batch_size = 8
+        self.valid_interval = 1000
+        self.log_interval = 25
+        self.save_interval = 25
+        self.batch_size = 16
         self.pin_mem = False
-        self.optim = {'opt': 'Adagrad', 'lr': 0.2}
+        self.optim = {'opt': 'Adam', 'lr': 0.001}
+        self.device = 'cuda:1'
         # Choice:
         # {'opt': 'Adagrad', 'lr': 0.001}
         # {'opt': 'Adam'}

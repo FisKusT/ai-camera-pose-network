@@ -128,4 +128,4 @@ class DeepvoLoss(loss._Loss):
         super(DeepvoLoss, self).__init__()
 
     def forward(self, input,target):
-        return F.mse_loss(input[0:3], target[0:3], size_average=self.size_average, reduce=self.reduce) + 100 * F.mse_loss(input[3:6], target[3:6], size_average=self.size_average, reduce=self.reduce)
+        return F.mse_loss(input[0:2], target[0:2], size_average=self.size_average, reduce=self.reduce) + 1000 * F.mse_loss(input[3:6], target[3:6], size_average=self.size_average, reduce=self.reduce) + 1000 * F.mse_loss(input[2], target[2], size_average=self.size_average, reduce=self.reduce)
