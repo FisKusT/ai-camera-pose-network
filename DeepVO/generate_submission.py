@@ -11,6 +11,7 @@ from DeepVO.params import par
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--datapath", help="path to test set")
+parser.add_argument("--device", default='cuda:0', help="device to run on")
 args = parser.parse_args()
 
 # get df format for submission
@@ -33,27 +34,51 @@ test_dataset = ImageSequenceDataset(test_df, par.resize_mode, (par.img_w, par.im
 test_dl = DataLoader(test_dataset, batch_size=1, num_workers=par.n_processors, pin_memory=par.pin_mem, shuffle=False)
 
 # run model
-model = torch.load(
-    '/cortex/users/hilita/CameraPose/DeepVO/models/t1234_v_im184x608_s7x7_b16_rnn1000_optAdam_lr0.1.model_ep150.pth')
+models_dir = '/cortex/users/hilita/CameraPose/DeepVO/models/'
+models_dict = {
+    'angle': torch.load(
+        models_dir + 't1234_v_im184x608_s7x7_b16_rnn1000_optAdam_lr0.001.model_ep0_angle1_trans0_height0.pth'),
+    'height': torch.load(
+        models_dir + 't1234_v_im184x608_s7x7_b16_rnn1000_optAdam_lr0.001.model_ep0_angle0_trans0_height1.pth'),
+    'translation': torch.load(
+        models_dir + 't1234_v_im184x608_s7x7_b16_rnn1000_optAdam_lr0.1.model_ep0_angle0_trans1_height0.pth')
+}
 
-results = pd.DataFrame(columns=['Filename', 'Easting', 'Northing', 'Height', 'Roll', 'Pitch', 'Yaw'])
-for i, (seq_len, test_seq, pose_seq) in enumerate(test_dl):
-    preds = model(test_seq.cuda()).cpu().detach().numpy()
+results_dict = {key: pd.DataFrame(columns=['Filename', 'Easting', 'Northing', 'Height', 'Roll', 'Pitch', 'Yaw']) for key
+                in
+                models_dict.keys()}
+for model_name, model in models_dict.items():
+    model.cuda(device=args.device)
+    results = results_dict[model_name]
+    for i, (seq_len, test_seq, pose_seq) in enumerate(test_dl):
+        preds = model(test_seq.cuda(device=args.device)).cpu().detach().numpy()
 
-    for j in range(preds.shape[1]):
-        results.loc[i * int(seq_len) + j, :] = [test_df.loc[i]['image_path'][j].split("/")[-1]] + list(preds[0, j])
+        for j in range(preds.shape[1]):
+            results.loc[i * int(seq_len) + j, :] = [test_df.loc[i]['image_path'][j].split("/")[-1]] + list(preds[0, j])
+    model.cpu()
 
-    a = 1
+relevant_columns = {
+    'angle': ['Filename', 'Roll', 'Pitch', 'Yaw'],
+    'height': ['Filename', 'Height'],
+    'translation': ['Filename', 'Easting', 'Northing']
+}
 
 # edit submission df
-final_df = submission[['Filename', 'TrajectoryId', 'Timestamp']].merge(results.groupby('Filename').mean(), how='left',
-                                                                       left_on='Filename', right_index=True)
+final_df = submission[['Filename', 'TrajectoryId', 'Timestamp']]
+for key in ['translation', 'height', 'angle']:
+    final_df = final_df.merge(results_dict[key][relevant_columns[key]].groupby('Filename').median(), how='left',
+                              on='Filename', right_index=True)
+
+# final_df = submission[['Filename', 'TrajectoryId', 'Timestamp']].merge(results.groupby('Filename').median(), how='left',
+#                                                                        left_on='Filename', right_index=True)
 
 # TODO: handle last row
 final_df = final_df.fillna(method='ffill')
 
 
 # try to add intrinsic params
+
+
 def euler_to_rotation_matrix(roll, pitch, yaw):
     R_x = np.array([[1, 0, 0],
                     [0, np.cos(roll), -np.sin(roll)],
@@ -131,4 +156,4 @@ final_df[['Easting', 'Northing', 'Height', 'Roll', 'Pitch', 'Yaw']] = final_df['
     decompose_projection_matrix)
 
 # save submission df
-final_df.to_csv('submission.csv', index=False)
+final_df.drop('ProjectionMatrix', axis=1).to_csv('submission.csv', index=False)
